@@ -1,0 +1,22 @@
+This my take on a simulator for the CS452 course train set.  It implements the
+Marklin controller serial interface (documented at [1]) on a UNIX socket server
+at 'marklin-simulator' in the abstract namespace, and displays the state of the
+simulated trains and track graphically using graph_tool.  Time in the simulator
+is advanced via key-presses - space to advance by one tick, 'n' to advance by
+ten ticks.
+
+This tool is originally based on the 'mock-train' simulator [2] by crazy2be's
+group.  My improvements are:
+- the ability to single-step time (intended as a companion for step-debugging
+  with an emulated kernel)
+- better visual presentation of the track graph
+- more flexible, hackable simulation of train motion
+
+To use this, you'll need to emulate your kernel and hook up its virtual serial
+port to the simulator's UNIX socket.  QEMU is a common choice for this -
+alternatively, I'm working on an emulator at the level of the documented
+standard kernel interface to enable thread-aware source-level debugging right
+now.
+
+[1] http://www.marklin.com/tech/digital1/components/commands.html
+[2] https://github.com/crazy2be/cs452
