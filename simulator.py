@@ -96,6 +96,7 @@ class Track:
         n_colour = g.new_vertex_property("string")
         e_title = g.new_edge_property("string")
         self.e_pen_width = e_pen_width = g.new_edge_property("float")
+        self.e_start_marker = e_start_marker = g.new_edge_property("int")
 
         # This is the definition of the embedding as 2D coordinates, which we
         # need to hold on to for use in later drawing operations.
@@ -130,6 +131,13 @@ class Track:
                     continue
 
                 e = g.add_edge(g.vertex(edge.src.i), g.vertex(edge.dest.i))
+
+                if node.typ == cs452_track.NODE_BRANCH \
+                    and node.switch_direction == i:
+                    e_start_marker[e] = 1
+                else:
+                    e_start_marker[e] = 0
+
                 e_dist[e] = edge.dist
                 e_pen_width[e] = 1.0
                 e_title[e] = "%.2f" % (edge.dist)
@@ -142,7 +150,7 @@ class Track:
                                                vertex_fill_color=n_colour,
                                                vertex_text=n_title,
                                                vertex_font_size=6,
-                                               edge_start_marker='none',
+                                               edge_start_marker=e_start_marker,
                                                edge_end_marker='none',
                                                edge_font_size=6)
 
@@ -153,7 +161,13 @@ class Track:
         for node in self.tr:
             if node.typ == cs452_track.NODE_BRANCH and node.num == sw:
                 node.switch_direction = d
-                return
+
+                for i, edge in enumerate(node.edge):
+                    e = self.g.edge(self.g.vertex(edge.src.i), self.g.vertex(edge.dest.i))
+                    self.e_start_marker[e] = 1 \
+                        if node.switch_direction == i \
+                        else 0
+
         print "WARN: Could not find switch %d" % sw
 
 class Train:
