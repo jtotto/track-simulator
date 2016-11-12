@@ -51,7 +51,6 @@ class MarklinController:
             if len(self.buf) < 2:
                 return None,
             switchno = ord(self.buf[1])
-            print "Switch command not supported %d %d" % (f, switchno)
             self.buf = self.buf[2:]
             return 'switch', switchno, f - 0x21
         elif f == 0x85:
@@ -254,7 +253,7 @@ class Train:
             print 'Unsafe reversal while not stopped!'
 
         self.edge = self.edge.reverse
-        self.edge_dist = e_dist[self.e()] - self.edge_dist
+        self.edge_dist = self.track.e_dist[self.e()] - self.edge_dist
 
     # Map our current edge in the CS452 track graph to the graph_tool visual
     # track graph.
