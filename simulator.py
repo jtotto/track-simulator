@@ -277,7 +277,7 @@ class Train:
         cr.show_text("%d" % self.num)
         cr.fill()
 
-def simulator(sock, tns):
+def simulator(marklin_sock, timer_sock, tns):
     # The logical components of the simulator are:
     #   - The track, which is essentially the awful track graph representation
     #     from the course page with some additional state.
@@ -306,9 +306,9 @@ def simulator(sock, tns):
 
     sim = Simulator()
 
-    def sock_readable(source, condition):
-        assert source == sock and condition == GLib.IO_IN
-        data = sock.recv(1024)
+    def marklin_sock_readable(source, condition):
+        assert source == marklin_sock and condition == GLib.IO_IN
+        data = marklin_sock.recv(1024)
         if not data:
             return True
 
@@ -365,7 +365,7 @@ def simulator(sock, tns):
             sim.time += 1
             if sim.poll_snapshot is not None \
                 and sim.time > sim.last_polled + POLL_TICKS:
-                sent = sock.send(sim.poll_snapshot)
+                sent = marklin_sock.send(sim.poll_snapshot)
                 # There's no way we're going to fill the send buffer...
                 assert sent == len(sim.poll_snapshot)
                 sim.poll_snapshot = None
@@ -373,13 +373,15 @@ def simulator(sock, tns):
             for train in trains.values():
                 train.advance()
 
+            timer_sock.send('0')
+
         track.win.graph.regenerate_surface()
         track.win.graph.queue_draw()
 
     track.win.connect("delete_event", destroy_callback)
     track.win.connect('key-press-event', key_callback)
     track.win.graph.connect("draw", draw_simulation)
-    GLib.io_add_watch(sock, GLib.IO_IN, sock_readable)
+    GLib.io_add_watch(marklin_sock, GLib.IO_IN, marklin_sock_readable)
 
     track.show()
 
@@ -391,10 +393,18 @@ if __name__ == '__main__':
         print 'Usage: simulator.py [train number]*'
         sys.exit()
 
-    server_sock = socket.socket(socket.AF_UNIX)
-    server_sock.bind('\0marklin-simulator')
-    server_sock.listen(0)
-    sock, addr = server_sock.accept()
-    sock.setblocking(0)
+    marklin_sock = socket.socket(socket.AF_UNIX)
+    marklin_sock.bind('\0marklin-simulator')
+    marklin_sock.listen(0)
 
-    simulator(sock, tns)
+    timer_sock = socket.socket(socket.AF_UNIX)
+    timer_sock.bind('\0timer-simulator')
+    timer_sock.listen(0)
+
+    marklin_client, addr = marklin_sock.accept()
+    marklin_client.setblocking(0)
+
+    timer_client, addr = timer_sock.accept()
+    timer_client.setblocking(0)
+
+    simulator(marklin_client, timer_client, tns)
